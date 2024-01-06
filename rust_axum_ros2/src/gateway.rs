@@ -1,3 +1,4 @@
+use crate::error::Error;
 use crate::models::task::Task;
 use crate::models::user::User;
 use crate::trajectory::FollowJointTrajectoryActionExecutor;
@@ -48,5 +49,9 @@ impl Gateway {
 
     pub fn execute_follow_joint_trajectory(&self) -> r2r::Result<tokio::task::JoinHandle<()>> {
         self.follow_joint_trajectory_action_executor.send_goal()
+    }
+
+    pub fn cancel_follow_joint_trajectory(&self) -> Result<tokio::task::JoinHandle<()>, Error> {
+        self.follow_joint_trajectory_action_executor.cancel_goal()
     }
 }

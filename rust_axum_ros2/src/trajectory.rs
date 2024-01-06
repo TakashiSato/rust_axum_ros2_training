@@ -1,3 +1,5 @@
+use crate::error::Error;
+use arci;
 use arci_ros2::Node;
 use futures::stream::StreamExt;
 use r2r::{
@@ -41,6 +43,7 @@ impl FollowJointTrajectoryActionExecutor {
 
     pub fn send_goal(&self) -> r2r::Result<tokio::task::JoinHandle<()>> {
         let node = self.node.clone();
+        let current_goal = self.current_goal.clone();
         let action_client = self.action_client.clone();
         let is_available = node.r2r().is_available(&action_client)?;
 
@@ -59,6 +62,7 @@ impl FollowJointTrajectoryActionExecutor {
 
             let is_done = Arc::new(AtomicBool::new(false));
             let is_done_clone = is_done.clone();
+            let current_goal_clone = current_goal.clone();
 
             let (cancel_tx, mut cancel_rx1) = broadcast::channel(1);
             let mut cancel_rx2 = cancel_tx.subscribe();
@@ -93,6 +97,9 @@ impl FollowJointTrajectoryActionExecutor {
                 let (goal, result, feedback) = send_goal_request
                     .await
                     .expect("goal rejected by action server");
+
+                // update current_goal
+                current_goal_clone.lock().unwrap().replace(goal.clone());
 
                 println!("goal_accepted: {}", goal.uuid);
 
@@ -171,8 +178,26 @@ impl FollowJointTrajectoryActionExecutor {
                     break;
                 }
             }
+
+            // clear current_goal
+            current_goal.lock().unwrap().take();
         });
 
         Ok(action_handler)
+    }
+
+    pub fn cancel_goal(&self) -> Result<tokio::task::JoinHandle<()>, Error> {
+        if let Some(current_goal) = self.current_goal.lock().unwrap().take() {
+            println!("cancel goal: {:?}", current_goal.uuid);
+            let fut = current_goal.cancel().map_err(|e| Error::Other(e.into()))?;
+            let cancel_handler = tokio::spawn(async move {
+                let _ = fut.await;
+                println!("canceled goal: {:?}", current_goal.uuid);
+            });
+
+            return Ok(cancel_handler);
+        }
+
+        Err(Error::NoValidGoalExists)
     }
 }

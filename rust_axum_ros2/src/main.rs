@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -20,6 +22,7 @@ enum GatewayCommand {
     PublishUser { user: User, resp: Responder<()> },
     PublishTask { task: Task, resp: Responder<()> },
     ExecuteTask { task: Task, resp: Responder<()> },
+    CancelTask { task: Task, resp: Responder<()> },
 }
 
 type Responder<T> = oneshot::Sender<r2r::Result<T>>;
@@ -49,7 +52,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let _res = gateway
                         .execute_follow_joint_trajectory()
                         .expect("failed to execute_follow_joint_trajectory");
+
                     // let _ = res.await;
+                    let _ = resp.send(Ok(()));
+                }
+                GatewayCommand::CancelTask { task, resp } => {
+                    println!("CancelTask: {:?}", task);
+                    let res = gateway.cancel_follow_joint_trajectory();
+                    match res {
+                        Ok(handler) => {
+                            handler.await.unwrap();
+                        }
+                        Err(e) => {
+                            println!("CancelTask failed: {:?}", e);
+                        }
+                    }
+
                     let _ = resp.send(Ok(()));
                 }
             }
@@ -63,6 +81,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/user", post(create_user))
         .route("/task", post(create_task))
         .route("/execute_task", post(execute_task))
+        .route("/cancel_task", post(cancel_task))
         .with_state(tx.clone());
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
@@ -150,6 +169,28 @@ async fn execute_task(
         Ok(_) => (StatusCode::CREATED, Json(task)),
         Err(e) => {
             println!("Error executing task: {:?}", e);
+            (StatusCode::BAD_REQUEST, Json(task))
+        }
+    }
+}
+
+async fn cancel_task(
+    State(tx): State<mpsc::Sender<GatewayCommand>>,
+    Json(payload): Json<CreateTask>,
+) -> impl IntoResponse {
+    let task = Task::new(2222, payload.taskname.clone());
+    let (resp_tx, resp_rx) = oneshot::channel();
+    let cmd = GatewayCommand::CancelTask {
+        task: task.clone(),
+        resp: resp_tx,
+    };
+    tx.send(cmd).await.unwrap();
+
+    let res = resp_rx.await.unwrap();
+    match res {
+        Ok(_) => (StatusCode::ACCEPTED, Json(task)),
+        Err(e) => {
+            println!("Error canceling task: {:?}", e);
             (StatusCode::BAD_REQUEST, Json(task))
         }
     }
