@@ -19,8 +19,8 @@ struct NodeInner {
 
 impl Node {
     /// Creates a new ROS2 node.
-    pub fn new(name: &str, namespace: &str) -> Result<Self, Box<dyn std::error::Error>> {
-        let ctx = r2r::Context::create()?;
+    pub fn new(name: &str, namespace: &str) -> Result<Self, arci::Error> {
+        let ctx = r2r::Context::create().map_err(anyhow::Error::from)?;
         Self::with_context(ctx, name, namespace)
     }
 
@@ -29,8 +29,8 @@ impl Node {
         ctx: r2r::Context,
         name: &str,
         namespace: &str,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
-        let node = r2r::Node::create(ctx, name, namespace)?;
+    ) -> Result<Self, arci::Error> {
+        let node = r2r::Node::create(ctx, name, namespace).map_err(anyhow::Error::from)?;
         Ok(Self {
             inner: Arc::new(NodeInner {
                 node: Mutex::new(node),
