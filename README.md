@@ -1,4 +1,4 @@
-# rust_axum_ros2_training
+# rust_axum_ros2
 
 ## How to run
 
@@ -6,12 +6,12 @@
 
 ```
 colcon build
-ros2 run rust_axum_ros2_training rust_axum_ros2_training
+ros2 run rust_axum_ros2 rust_axum_ros2
 ```
 
 ###  without colcon
 
 ```
-cd rust_axum_ros2_training
+cd rust_axum_ros2
 cargo run
 ```

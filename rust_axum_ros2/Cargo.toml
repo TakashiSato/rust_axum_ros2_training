@@ -1,5 +1,5 @@
 [package]
-name = "rust_axum_ros2_training"
+name = "rust_axum_ros2"
 version = "0.1.0"
 edition = "2021"
 license = "Apache-2.0"

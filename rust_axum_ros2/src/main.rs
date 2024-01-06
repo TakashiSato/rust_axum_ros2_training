@@ -5,9 +5,9 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use rust_axum_ros2_training::gateway::Gateway;
-use rust_axum_ros2_training::task::{CreateTask, Task};
-use rust_axum_ros2_training::user::{CreateUser, User};
+use rust_axum_ros2::gateway::Gateway;
+use rust_axum_ros2::models::task::{CreateTask, Task};
+use rust_axum_ros2::models::user::{CreateUser, User};
 use serde_json::json;
 use tokio::sync::{mpsc, oneshot};
 
@@ -26,7 +26,7 @@ type Responder<T> = oneshot::Sender<r2r::Result<T>>;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let gateway = Gateway::new("rust_axum_ros2_training_node", "")?;
+    let gateway = Gateway::new("rust_axum_ros2_node", "")?;
     // let arc_gateway = Arc::new(Mutex::new(gateway));
 
     let (tx, mut rx) = mpsc::channel(2);

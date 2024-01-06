@@ -1,5 +1,5 @@
-use crate::task::Task;
-use crate::user::User;
+use crate::models::task::Task;
+use crate::models::user::User;
 use arci_ros2::Node;
 use futures::stream::StreamExt;
 use r2r::{

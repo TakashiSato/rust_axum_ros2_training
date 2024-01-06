@@ -3,7 +3,7 @@ resolver = "2"
 members = [
     "thirdparty/arci",
     "thirdparty/arci-ros2",
-    "rust_axum_ros2_training",
+    "rust_axum_ros2",
 ]
 
 [workspace.dependencies]
