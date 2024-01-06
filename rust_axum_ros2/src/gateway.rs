@@ -7,7 +7,7 @@ use r2r::{std_msgs, QosProfile};
 use std::time::Duration;
 
 pub struct Gateway {
-    node: Node,
+    _node: Node,
     user_pub: r2r::Publisher<std_msgs::msg::String>,
     task_pub: r2r::Publisher<std_msgs::msg::String>,
     follow_joint_trajectory_action_executor: FollowJointTrajectoryActionExecutor,
@@ -30,7 +30,7 @@ impl Gateway {
             FollowJointTrajectoryActionExecutor::new(node.clone(), "follow_joint_trajectory");
 
         Ok(Gateway {
-            node,
+            _node: node,
             user_pub,
             task_pub,
             follow_joint_trajectory_action_executor,
