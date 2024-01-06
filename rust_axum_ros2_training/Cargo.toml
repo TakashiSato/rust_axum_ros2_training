@@ -5,7 +5,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-arci_ros2.workspace = true
+arci-ros2.workspace = true
 axum.workspace = true
 futures.workspace = true
 r2r.workspace = true

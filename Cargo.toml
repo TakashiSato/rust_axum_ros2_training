@@ -2,13 +2,13 @@
 resolver = "2"
 members = [
     "thirdparty/arci",
-    "thirdparty/arci_ros2",
+    "thirdparty/arci-ros2",
     "rust_axum_ros2_training",
 ]
 
 [workspace.dependencies]
 arci = { version = "0.1.0", path = "./thirdparty/arci" }
-arci_ros2 = { version = "0.1.0", path = "./thirdparty/arci_ros2" }
+arci-ros2 = { version = "0.1.0", path = "./thirdparty/arci-ros2" }
 anyhow = "1"
 axum = "0.7"
 futures = "0.3"
