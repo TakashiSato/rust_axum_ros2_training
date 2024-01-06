@@ -19,13 +19,14 @@ enum GatewayCommand {
     // },
     PublishUser { user: User, resp: Responder<()> },
     PublishTask { task: Task, resp: Responder<()> },
+    ExecuteTask { task: Task, resp: Responder<()> },
 }
 
 type Responder<T> = oneshot::Sender<r2r::Result<T>>;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let gateway = Gateway::new()?;
+    let gateway = Gateway::new("rust_axum_ros2_training_node", "")?;
     // let arc_gateway = Arc::new(Mutex::new(gateway));
 
     let (tx, mut rx) = mpsc::channel(2);
@@ -43,6 +44,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let res = gateway.publish_task(task);
                     let _ = resp.send(res);
                 }
+                GatewayCommand::ExecuteTask { task, resp } => {
+                    println!("ExecuteTask: {:?}", task);
+                    let _res = gateway
+                        .execute_follow_joint_trajectory()
+                        .expect("failed to execute_follow_joint_trajectory");
+                    // let _ = res.await;
+                    let _ = resp.send(Ok(()));
+                }
             }
         }
     });
@@ -53,6 +62,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/hello/:name", get(json_hello))
         .route("/user", post(create_user))
         .route("/task", post(create_task))
+        .route("/execute_task", post(execute_task))
         .with_state(tx.clone());
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
@@ -118,6 +128,28 @@ async fn create_task(
         Ok(_) => (StatusCode::CREATED, Json(task)),
         Err(e) => {
             println!("Error publishing task: {:?}", e);
+            (StatusCode::BAD_REQUEST, Json(task))
+        }
+    }
+}
+
+async fn execute_task(
+    State(tx): State<mpsc::Sender<GatewayCommand>>,
+    Json(payload): Json<CreateTask>,
+) -> impl IntoResponse {
+    let task = Task::new(2222, payload.taskname.clone());
+    let (resp_tx, resp_rx) = oneshot::channel();
+    let cmd = GatewayCommand::ExecuteTask {
+        task: task.clone(),
+        resp: resp_tx,
+    };
+    tx.send(cmd).await.unwrap();
+
+    let res = resp_rx.await.unwrap();
+    match res {
+        Ok(_) => (StatusCode::CREATED, Json(task)),
+        Err(e) => {
+            println!("Error executing task: {:?}", e);
             (StatusCode::BAD_REQUEST, Json(task))
         }
     }
