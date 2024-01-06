@@ -39,6 +39,7 @@ dependencies = [
  "anyhow",
  "futures",
  "thiserror",
+ "tokio",
 ]
 
 [[package]]

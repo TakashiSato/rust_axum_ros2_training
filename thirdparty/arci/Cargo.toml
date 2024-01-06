@@ -2,8 +2,15 @@
 name = "arci"
 version = "0.1.0"
 edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/openrr/openrr"
+homepage = "https://openrr.github.io"
+description = "Abstract Robot Control Interface"
+keywords = ["robotics", "robot"]
+categories = ["science::robotics"]
 
 [dependencies]
-thiserror = "1"
-anyhow = "1"
-futures = "0.3"
+anyhow.workspace = true
+futures.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, features = ["time"] }
