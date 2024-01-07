@@ -48,12 +48,12 @@ impl FollowJointTrajectoryActionExecutor {
 
         let action_handler = tokio::spawn(async move {
             // wait for action server to be available
-            println!("waiting for action server...");
+            log::info!("waiting for action server...");
             if let Err(e) = timeout(Duration::from_millis(3000), is_available).await {
-                println!("action server is not available: {:?}", e);
+                log::error!("action server is not available: {:?}", e);
                 return;
             }
-            println!("action server is available");
+            log::info!("action server is available");
 
             let now = std::time::Instant::now();
             let last_update_time = Arc::new(Mutex::new(now));
@@ -100,7 +100,7 @@ impl FollowJointTrajectoryActionExecutor {
                 // update current_goal
                 current_goal_clone.lock().unwrap().replace(goal.clone());
 
-                println!("goal_accepted: {}", goal.uuid);
+                log::info!("goal_accepted: {}", goal.uuid);
 
                 // spawn a task to handle feedback
                 tokio::spawn(async move {
@@ -114,25 +114,25 @@ impl FollowJointTrajectoryActionExecutor {
                                 let now = std::time::Instant::now();
                                 *last_update_time.lock().unwrap() = now;
 
-                                println!(
+                                log::debug!(
                                     "feedback: {:?} -- {:?}",
                                     msg.header.stamp,
                                     goal.get_status()
                                 );
                                 std::future::ready(())
                             }) => {
-                                println!("feedback finished");
+                                log::info!("feedback finished");
                             }
                         v = cancel_rx1.recv() => {
                             match v {
                                 Ok(_) => {
-                                    println!("feedback cancel_rx.recv() finished");
+                                    log::info!("feedback cancel_rx.recv() finished");
                                 }
                                 Err(broadcast::error::RecvError::Closed) => {
-                                    println!("feedback cancel_rx.recv() closed");
+                                    log::debug!("feedback cancel_rx.recv() closed");
                                 }
                                 Err(e) => {
-                                    println!("feedback cancel_rx.recv() error: {:?}", e);
+                                    log::error!("feedback cancel_rx.recv() error: {:?}", e);
                                 }
                             }
                         }
@@ -144,10 +144,10 @@ impl FollowJointTrajectoryActionExecutor {
                     r = result => {
                         match r {
                             Ok((status, msg)) => {
-                                println!("Got result {} with msg {:?}", status, msg);
+                                log::info!("Got result {} with msg {:?}", status, msg);
                             }
                             Err(e) => {
-                                println!("Action failed: {:?}", e);
+                                log::error!("Action failed: {:?}", e);
                             }
                         }
                         is_done.store(true, Ordering::Relaxed);
@@ -155,13 +155,13 @@ impl FollowJointTrajectoryActionExecutor {
                     v = cancel_rx2.recv() => {
                         match v {
                             Ok(_) => {
-                                println!("wait result cancel_rx.recv() finished");
+                                log::info!("wait result cancel_rx.recv() finished");
                             }
                             Err(broadcast::error::RecvError::Closed) => {
-                                println!("wait result cancel_rx.recv() closed");
+                                log::debug!("wait result cancel_rx.recv() closed");
                             }
                             Err(e) => {
-                                println!("wait result cancel_rx.recv() error: {:?}", e);
+                                log::error!("wait result cancel_rx.recv() error: {:?}", e);
                             }
                         }
                     }
@@ -175,7 +175,7 @@ impl FollowJointTrajectoryActionExecutor {
 
                 // check if action is completed
                 if is_done_clone.load(Ordering::Relaxed) {
-                    println!("action completed");
+                    log::info!("action completed");
                     break;
                 }
 
@@ -185,7 +185,7 @@ impl FollowJointTrajectoryActionExecutor {
                 let elapsed_from_last_update = now - last_update_time;
 
                 if elapsed_from_last_update >= timeout {
-                    println!("action timed out");
+                    log::warn!("action timed out");
                     cancel_tx.send("cancel").unwrap();
                     break;
                 }
@@ -200,11 +200,11 @@ impl FollowJointTrajectoryActionExecutor {
 
     pub fn cancel_goal(&self) -> Result<tokio::task::JoinHandle<()>, Error> {
         if let Some(current_goal) = self.current_goal.lock().unwrap().take() {
-            println!("cancel goal: {:?}", current_goal.uuid);
+            log::warn!("cancel goal: {:?}", current_goal.uuid);
             let fut = current_goal.cancel().map_err(|e| Error::Other(e.into()))?;
             let cancel_handler = tokio::spawn(async move {
                 let _ = fut.await;
-                println!("canceled goal: {:?}", current_goal.uuid);
+                log::warn!("canceled goal: {:?}", current_goal.uuid);
             });
 
             return Ok(cancel_handler);

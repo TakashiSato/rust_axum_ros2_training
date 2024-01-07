@@ -6,6 +6,7 @@ use axum::{
     Json, Router,
 };
 use rust_axum_ros2::gateway::Gateway;
+use rust_axum_ros2::logger::setup_logger;
 use rust_axum_ros2::models::task::{CreateTask, Task};
 use rust_axum_ros2::models::user::{CreateUser, User};
 use serde_json::json;
@@ -27,6 +28,8 @@ type Responder<T> = oneshot::Sender<r2r::Result<T>>;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    setup_logger()?;
+
     let gateway = Gateway::new("rust_axum_ros2_node", "")?;
     // let arc_gateway = Arc::new(Mutex::new(gateway));
 
@@ -36,17 +39,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         while let Some(cmd) = rx.recv().await {
             match cmd {
                 GatewayCommand::PublishUser { user, resp } => {
-                    println!("PublishUser: {:?}", user);
+                    log::info!("PublishUser: {:?}", user);
                     let res = gateway.publish_user(user);
                     let _ = resp.send(res);
                 }
                 GatewayCommand::PublishTask { task, resp } => {
-                    println!("PublishTask: {:?}", task);
+                    log::info!("PublishTask: {:?}", task);
                     let res = gateway.publish_task(task);
                     let _ = resp.send(res);
                 }
                 GatewayCommand::ExecuteTask { task, resp } => {
-                    println!("ExecuteTask: {:?}", task);
+                    log::info!("ExecuteTask: {:?}", task);
                     let _res = gateway
                         .execute_follow_joint_trajectory()
                         .expect("failed to execute_follow_joint_trajectory");
@@ -55,14 +58,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let _ = resp.send(Ok(()));
                 }
                 GatewayCommand::CancelTask { task, resp } => {
-                    println!("CancelTask: {:?}", task);
+                    log::info!("CancelTask: {:?}", task);
                     let res = gateway.cancel_follow_joint_trajectory();
                     match res {
                         Ok(handler) => {
                             handler.await.unwrap();
                         }
                         Err(e) => {
-                            println!("CancelTask failed: {:?}", e);
+                            log::error!("CancelTask failed: {:?}", e);
                         }
                     }
 
@@ -84,7 +87,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
 
-    println!("Server running on http://localhost:3000");
+    log::info!("Server running on http://localhost:3000");
     axum::serve(listener, app).await.unwrap();
 
     manager.await.unwrap();
@@ -93,7 +96,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 async fn root() -> &'static str {
-    println!("Hello, world!");
+    log::info!("Hello, world!");
     "Hello, World!"
 }
 
@@ -121,7 +124,7 @@ async fn create_user(
     match res {
         Ok(_) => (StatusCode::CREATED, Json(user)),
         Err(e) => {
-            println!("Error publishing user: {:?}", e);
+            log::info!("Error publishing user: {:?}", e);
             (StatusCode::BAD_REQUEST, Json(user))
         }
     }
@@ -144,7 +147,7 @@ async fn create_task(
     match res {
         Ok(_) => (StatusCode::CREATED, Json(task)),
         Err(e) => {
-            println!("Error publishing task: {:?}", e);
+            log::info!("Error publishing task: {:?}", e);
             (StatusCode::BAD_REQUEST, Json(task))
         }
     }
@@ -166,7 +169,7 @@ async fn execute_task(
     match res {
         Ok(_) => (StatusCode::CREATED, Json(task)),
         Err(e) => {
-            println!("Error executing task: {:?}", e);
+            log::info!("Error executing task: {:?}", e);
             (StatusCode::BAD_REQUEST, Json(task))
         }
     }
@@ -188,7 +191,7 @@ async fn cancel_task(
     match res {
         Ok(_) => (StatusCode::ACCEPTED, Json(task)),
         Err(e) => {
-            println!("Error canceling task: {:?}", e);
+            log::info!("Error canceling task: {:?}", e);
             (StatusCode::BAD_REQUEST, Json(task))
         }
     }
