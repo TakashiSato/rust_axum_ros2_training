@@ -128,6 +128,9 @@ impl FollowJointTrajectoryActionExecutor {
                                 Ok(_) => {
                                     println!("feedback cancel_rx.recv() finished");
                                 }
+                                Err(broadcast::error::RecvError::Closed) => {
+                                    println!("feedback cancel_rx.recv() closed");
+                                }
                                 Err(e) => {
                                     println!("feedback cancel_rx.recv() error: {:?}", e);
                                 }
@@ -149,8 +152,18 @@ impl FollowJointTrajectoryActionExecutor {
                         }
                         is_done.store(true, Ordering::Relaxed);
                     }
-                    _ = cancel_rx2.recv() => {
-                        println!("wait result cancel_rx.changed() finished");
+                    v = cancel_rx2.recv() => {
+                        match v {
+                            Ok(_) => {
+                                println!("wait result cancel_rx.recv() finished");
+                            }
+                            Err(broadcast::error::RecvError::Closed) => {
+                                println!("wait result cancel_rx.recv() closed");
+                            }
+                            Err(e) => {
+                                println!("wait result cancel_rx.recv() error: {:?}", e);
+                            }
+                        }
                     }
                 }
             });
