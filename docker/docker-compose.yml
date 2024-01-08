@@ -1,0 +1,25 @@
+---
+version: "3"
+services:
+  ros2:
+    image: rust_axum_ros2:humble
+    build:
+      context: .
+      dockerfile: ./ros2/Dockerfile
+      network: host # rosdep update fails without this
+    container_name: ros2
+    stdin_open: true
+    tty: true
+    init: true
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Tokyo
+      - DISPLAY=${DISPLAY}
+      - RCUTILS_COLORIZED_OUTPUT=1  # enable ROS2 colorized log outputs
+    volumes:
+      - /tmp/.X11-unix/:/tmp/.X11-unix
+      - ../../../:/home/ubuntu/ros2_ws
+    command: '/bin/bash'
+    ports:
+      - 3000:3000

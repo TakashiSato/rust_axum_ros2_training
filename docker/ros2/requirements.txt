@@ -1,0 +1,2 @@
+# -e git+https://github.com/tier4/colcon-cargo.git#egg=colcon-cargo
+# -e git+https://github.com/colcon/colcon-ros-cargo.git#egg=colcon-ros-cargo
